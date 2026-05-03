@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>WOLF LABS | The Connection Hub (A1)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Fonts: Plus Jakarta Sans (Headings) & Inter (Body) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* === THE CONNECTION HUB VARIABLES === */
+        :root {
+            --bg-deep: #050A14;       /* Darker Midnight Blue */
+            --bg-surface: #0D162B;    /* Darker Deep Ocean */
+            --accent-cyan: #00F0FF;   /* Action / Primary */
+            --accent-green: #00FFA3;  /* Success / Secondary */
+            --accent-pink: #FF4D6D;   /* Alerts / Errors */
+            --text-main: #FFFFFF;
+            --text-muted: #8A94A6;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(0, 240, 255, 0.04), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(0, 255, 163, 0.04), transparent 25%);
+        }
+
+        .header-title { font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: -0.02em; }
+        .mono-text { font-family: 'JetBrains Mono', monospace; }
+
+        /* HUD TOP */
+        #hud-top {
+            position: fixed; top: 0; left: 0; right: 0; padding: 20px 40px;
+            background: linear-gradient(to bottom, rgba(5, 10, 20, 0.98) 0%, transparent);
+            z-index: 1000; backdrop-filter: blur(8px); border-bottom: 1px solid rgba(0, 240, 255, 0.1);
+        }
+
+        .hud-bar-container { width: 140px; height: 6px; background: rgba(255,255,255,0.05); border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
+        .hud-bar-fill { height: 100%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 6px;}
+
+        /* CONTENT ARENA */
+        #mission-arena { height: 100vh; padding-bottom: 120px; }
+
+        /* GLASS PANELS (UI Cards) */
+        .hub-card {
+            background-color: rgba(13, 22, 43, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 2px solid rgba(0, 240, 255, 0.15); /* Harmonious Border */
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        /* BUTTONS */
+        .btn-cyan {
+            background: var(--accent-cyan); color: #050A14; border-radius: 500px; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 0.1em; transition: all 0.2s ease; box-shadow: 0 4px 20px rgba(0, 240, 255, 0.3); border: none; cursor: pointer;
+        }
+        .btn-cyan:active { transform: scale(0.95); }
+        .btn-cyan:hover { box-shadow: 0 6px 25px rgba(0, 240, 255, 0.5); transform: translateY(-2px); background: #33F4FF; }
+
+        .btn-outline {
+            background: transparent; border: 2px solid var(--accent-cyan); color: var(--accent-cyan);
+            border-radius: 500px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;
+            transition: all 0.2s ease; cursor: pointer;
+        }
+        .btn-outline:active { transform: scale(0.95); }
+        .btn-outline:hover { background: rgba(0, 240, 255, 0.1); box-shadow: 0 0 15px rgba(0, 240, 255, 0.2); }
+
+        /* FOLLOW UP BOX (Universal) */
+        .follow-up-box {
+            background: rgba(0, 240, 255, 0.05); border: 2px solid rgba(0, 240, 255, 0.15); border-left: 6px solid var(--accent-cyan);
+            border-radius: 16px; padding: 24px; margin-top: auto; display: flex; gap: 20px; align-items: center; width: 100%;
+        }
+
+        /* MCQ ROWS */
+        .drill-row {
+            background: rgba(255,255,255,0.02); border: 2px solid rgba(0, 240, 255, 0.15);
+            border-radius: 16px; transition: all 0.2s ease; cursor: pointer; display: flex; align-items: center;
+            padding: 1.5rem;
+        }
+        .drill-row:hover:not(.locked-check) { background: rgba(0, 240, 255, 0.05); border-color: rgba(0, 240, 255, 0.4); transform: translateX(5px); }
+        .drill-row.correct { background: rgba(0, 255, 163, 0.1); border-color: var(--accent-green); color: var(--accent-green); box-shadow: 0 0 20px rgba(0, 255, 163, 0.2);}
+        .drill-row.wrong { background: rgba(255, 77, 109, 0.1); border-color: var(--accent-pink); color: var(--accent-pink); }
+
+        /* FLIP CARDS (VOCAB) */
+        .vocab-card { perspective: 1000px; cursor: pointer; }
+        .vocab-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); transform-style: preserve-3d; }
+        .vocab-card.flipped .vocab-inner { transform: rotateY(180deg); }
+        .vocab-front, .vocab-back {
+            position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+            border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .vocab-front { background: var(--bg-surface); border: 2px solid rgba(0, 240, 255, 0.2); }
+        .vocab-back { transform: rotateY(180deg); background: var(--accent-cyan); color: var(--bg-deep); border: 2px solid var(--accent-cyan); }
+
+        /* GRAMMAR TUNER (SWITCH) */
+        .tuner-checkbox:checked + .tuner-label { background-color: var(--accent-cyan); border-color: var(--accent-cyan); box-shadow: 0 0 20px rgba(0,240,255,0.4);}
+        .tuner-checkbox:checked + .tuner-label .tuner-knob { transform: translateX(100%); background-color: var(--bg-deep); }
+
+        /* WORD BUILDER */
+        .wb-pill { background-color: var(--bg-surface); padding: 14px 28px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: inline-block; border: 2px solid rgba(0, 240, 255, 0.15); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .wb-pill:hover { background-color: var(--accent-cyan); color: var(--bg-deep); transform: translateY(-4px); border-color: var(--accent-cyan); box-shadow: 0 8px 20px rgba(0,240,255,0.3);}
+        .wb-pill.used { opacity: 0; pointer-events: none; transform: scale(0.5); }
+        .wb-dropzone { min-height: 90px; border-bottom: 2px dashed rgba(0,240,255,0.4); display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; padding: 15px; width: 100%; max-width: 800px; margin: 0 auto; }
+        .pill-in-zone { background-color: var(--accent-cyan); color: var(--bg-deep); padding: 14px 28px; border-radius: 12px; font-weight: 800; cursor: default; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 4px 10px rgba(0,240,255,0.3);}
+
+        /* THE FIXER (PROFILE BUGS) */
+        .bug-word { background: rgba(255, 77, 109, 0.1); color: var(--accent-pink); border-bottom: 2px dashed var(--accent-pink); cursor: pointer; transition: all 0.2s; padding: 2px 8px; border-radius: 6px; font-weight: 800; display: inline-block; }
+        .bug-word:hover { background: rgba(255, 77, 109, 0.2); transform: translateY(-2px);}
+        .bug-fixed { background: rgba(0, 255, 163, 0.1); color: var(--accent-green); border-bottom: 2px solid var(--accent-green); pointer-events: none; padding: 2px 8px; border-radius: 6px; font-weight: 800; display: inline-block;}
+
+        /* CHAT SIMULATOR */
+        .chat-bubble-left { background: var(--bg-surface); padding: 16px 20px; border-radius: 20px 20px 20px 4px; align-self: flex-start; max-width: 80%; margin-bottom: 16px; border: 2px solid rgba(0, 240, 255, 0.15); font-weight: 500; font-size: 1.1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.2);}
+        .chat-bubble-right { background: var(--accent-cyan); color: var(--bg-deep); padding: 16px 20px; border-radius: 20px 20px 4px 20px; align-self: flex-end; max-width: 80%; margin-bottom: 16px; box-shadow: 0 4px 15px rgba(0,240,255,0.3); font-weight: 700; font-size: 1.1rem;}
+        
+        .chat-blank { display: inline-block; min-width: 70px; height: 28px; border-bottom: 2px solid #555; cursor: pointer; text-align: center; color: var(--text-main); font-weight: 800; transition: all 0.2s; margin: 0 6px;}
+        .chat-blank:hover { border-color: var(--accent-green); background: rgba(0, 255, 163, 0.1); }
+        .chat-blank.filled { border-bottom: none; pointer-events: none; color: var(--accent-green); text-shadow: 0 0 10px rgba(0,255,163,0.5);}
+
+        /* SPEAKING STARTERS */
+        .starter-content { max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out; opacity: 0; }
+        .starter-content.open { max-height: 300px; opacity: 1; margin-top: 1.5rem; }
+
+        /* FOOTER CONSOLE */
+        #nav-console {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); width: calc(100% - 48px); max-width: 1000px;
+            background: rgba(5, 10, 20, 0.95); backdrop-filter: blur(20px); border: 2px solid rgba(0, 240, 255, 0.15); border-radius: 100px;
+            padding: 12px 30px; z-index: 5000; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
+
+        /* DRAWERS */
+        .drawer { background: #03060C; color: var(--text-main); border-left: 1px solid rgba(0, 240, 255, 0.2); transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); z-index: 5100; box-shadow: -10px 0 40px rgba(0,0,0,0.9);}
+        .drawer.active { transform: translateX(0); }
+
+        /* ANIMATIONS */
+        .fade-in { animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .pulse-glow { animation: pulseGlow 2s infinite; }
+        @keyframes pulseGlow { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 240, 255, 0.3); border-radius: 10px; }
+
+        #confetti-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 9999; }
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-2px, 0, 0); } 20%, 80% { transform: translate3d(3px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-5px, 0, 0); } 40%, 60% { transform: translate3d(5px, 0, 0); } }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden text-sm">
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- HUD SUPERIOR -->
+    <div id="hud-top" class="flex justify-between items-center w-full">
+        <div class="flex items-center gap-10">
+            <div class="flex flex-col gap-1">
+                <span class="text-[9px] font-bold text-white/50 uppercase tracking-[0.2em] mono-text">Confidence (HP)</span>
+                <div class="hud-bar-container"><div id="hp-bar" class="hud-bar-fill bg-[var(--accent-pink)]" style="width: 100%;"></div></div>
+            </div>
+            <div class="flex flex-col gap-1">
+                <span class="text-[9px] font-bold text-white/50 uppercase tracking-[0.2em] mono-text">Connections (XP)</span>
+                <div class="hud-bar-container"><div id="xp-bar" class="hud-bar-fill bg-[var(--accent-green)]" style="width: 0%;"></div></div>
+            </div>
+        </div>
+        <div class="text-right flex items-center gap-5">
+            <button onclick="toggleTeacherHUD()" class="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-[10px] uppercase tracking-widest text-[#aaa] hover:text-white hover:border-[var(--accent-cyan)] transition-all mono-text"><i class="fas fa-chalkboard-teacher mr-2"></i>Guide</button>
+            <div>
+                <p class="header-title text-2xl font-black text-white tracking-tight leading-none uppercase">WOLF <span class="text-[var(--accent-cyan)]">LABS</span></p>
+                <p class="text-[8px] font-bold text-[var(--accent-green)] tracking-[0.4em] uppercase mono-text mt-1">Level A1 Beginner</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAINEL PRINCIPAL (CAPA) -->
+    <!-- SCROLL ATIVADO E PADDING AJUSTADO -->
+    <main id="dashboard" class="flex-grow flex flex-col items-center relative px-8 z-10 w-full h-full overflow-y-auto pb-48 pt-24">
+        <button onclick="toggleFullscreen()" class="absolute top-8 right-8 text-white/50 hover:text-white text-2xl z-50" title="Fullscreen"><i class="fas fa-expand"></i></button>
+        
+        <div class="max-w-5xl w-full flex flex-col items-center text-center space-y-10 animate-in fade-in my-auto">
+            <!-- Neon Icon -->
+            <div class="w-48 h-48 rounded-full bg-[var(--bg-surface)] flex items-center justify-center shadow-[0_0_60px_rgba(0,240,255,0.2)] border-2 border-[var(--accent-cyan)]/30 relative">
+                <i class="fas fa-globe text-7xl text-[var(--accent-cyan)] relative z-10"></i>
+                <div class="absolute inset-0 bg-[var(--accent-cyan)] opacity-20 rounded-full blur-2xl pulse-glow"></div>
+            </div>
+
+            <div class="space-y-4">
+                <p class="text-[var(--accent-cyan)] font-bold text-[12px] tracking-[0.8em] uppercase mono-text">First Contact Module</p>
+                <h1 class="text-6xl md:text-8xl font-black text-white leading-none tracking-tighter header-title drop-shadow-2xl uppercase">THE CONNECTION <br> <span class="text-[var(--accent-cyan)]">HUB</span></h1>
+                <p class="text-2xl text-[var(--text-muted)] font-medium mt-6">Learn how to introduce yourself and meet people.</p>
+            </div>
+            
+            <div class="flex flex-wrap justify-center gap-3 mono-text mt-4">
+                <span class="px-5 py-2 bg-[var(--accent-cyan)]/10 border border-[var(--accent-cyan)]/30 text-[10px] font-bold uppercase tracking-widest text-[var(--accent-cyan)] rounded-full">Verb To Be</span>
+                <span class="px-5 py-2 bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-widest text-[#ccc] rounded-full">Greetings</span>
+                <span class="px-5 py-2 bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-widest text-[#ccc] rounded-full">Possessives</span>
+            </div>
+            
+            <button onclick="startMission()" class="mt-12 btn-cyan px-16 py-6 text-xl mb-10 shrink-0 shadow-[0_0_20px_rgba(0,240,255,0.3)] hover:shadow-[0_0_30px_rgba(0,240,255,0.5)] transition-all">
+                Enter Hub
+            </button>
+            <p class="text-[10px] text-[#666] mt-4 uppercase tracking-widest mono-text"><i class="fas fa-mouse-pointer mr-2"></i> Double-click any English word to open Smart Dict</p>
+        </div>
+    </main>
+
+    <!-- ARENA DE CONTEÚDO DA LIÇÃO -->
+    <main id="mission-arena" class="hidden flex-grow flex-col overflow-hidden relative">
+        <div id="mission-content" class="flex-grow overflow-y-auto px-6 py-28 flex flex-col items-center w-full"></div>
+    </main>
+
+    <!-- CONSOLA DE NAVEGAÇÃO -->
+    <footer id="nav-console" class="hidden justify-between items-center w-full">
+        <div class="flex items-center gap-6 w-1/4">
+            <button onclick="goHome()" class="text-[#666] hover:text-[var(--accent-pink)] transition-colors" title="Leave Session"><i class="fas fa-power-off text-xl"></i></button>
+            <div class="flex flex-col mono-text">
+                <span id="console-title" class="text-[11px] font-bold text-white uppercase tracking-widest truncate">WOLF LABS</span>
+                <span id="console-type" class="text-[8px] font-bold text-[#888] uppercase tracking-widest">A1 MODULE</span>
+            </div>
+        </div>
+        <div class="flex flex-col items-center gap-3 w-1/2">
+            <div class="flex items-center gap-12">
+                <button onclick="prevStep()" class="text-white/30 hover:text-white transition-colors"><i class="fas fa-chevron-left text-2xl"></i></button>
+                <span id="console-counter" class="mono-text text-xs font-bold text-[var(--accent-cyan)] tracking-[0.4em]">NODE 01 / 25</span>
+                <button onclick="nextStep()" class="text-white hover:text-[var(--accent-cyan)] hover:scale-110 transition-all"><i class="fas fa-chevron-right text-2xl"></i></button>
+            </div>
+            <div class="w-64 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/10">
+                <div id="progress-bar" class="h-full bg-[var(--accent-cyan)] transition-all duration-300 shadow-[0_0_10px_rgba(0,240,255,0.5)]" style="width: 0%;"></div>
+            </div>
+        </div>
+        <div class="flex items-center justify-end gap-8 w-1/4">
+            <button onclick="toggleWhiteboard()" class="text-[#666] hover:text-white transition-colors" title="Digital Notes"><i class="fas fa-pen-nib text-xl"></i></button>
+            <button onclick="toggleFullscreen()" class="text-[#666] hover:text-white transition-colors" title="Fullscreen"><i class="fas fa-expand text-xl"></i></button>
+            <button onclick="toggleLessonNavigator()" class="text-[#666] hover:text-white transition-colors" title="Hub Map"><i class="fas fa-network-wired text-xl"></i></button>
+        </div>
+    </footer>
+
+    <!-- GAVETAS LATERAIS (DRAWERS) -->
+    
+    <!-- Notepad (Whiteboard) -->
+    <aside id="whiteboard" class="fixed right-0 top-0 h-screen w-[450px] drawer flex flex-col pt-24 z-[5100]">
+        <div class="p-8 border-b border-white/5 flex justify-between items-center">
+            <h2 class="header-title text-2xl font-black text-white tracking-tight">Digital Notes</h2>
+            <button onclick="toggleWhiteboard()" class="text-white/50 hover:text-[var(--accent-pink)]"><i class="fas fa-times text-xl"></i></button>
+        </div>
+        <div class="p-4 bg-black/20 flex flex-wrap gap-3 border-b border-white/5">
+            <button onclick="insertTag('[VOCAB]')" class="text-[10px] bg-white/5 border border-white/10 text-[#ccc] px-4 py-2 rounded-full hover:bg-[var(--accent-cyan)] hover:text-black transition-all font-bold uppercase tracking-widest mono-text">Vocab</button>
+            <button onclick="insertTag('[GRAMMAR]')" class="text-[10px] bg-white/5 border border-white/10 text-[#ccc] px-4 py-2 rounded-full hover:bg-[var(--accent-green)] hover:text-black transition-all font-bold uppercase tracking-widest mono-text">Grammar</button>
+        </div>
+        <textarea id="wb-text" class="flex-grow bg-transparent text-[var(--accent-cyan)] p-8 resize-none focus:outline-none mono-text text-sm leading-relaxed" placeholder="> Type your personal notes here..."></textarea>
+    </aside>
+
+    <!-- Navegador de Aula -->
+    <aside id="lesson-navigator" class="fixed right-0 top-0 h-screen w-80 drawer flex flex-col pt-24 z-[5100]">
+        <div class="p-8 border-b border-white/5 text-white font-bold uppercase tracking-widest flex justify-between items-center header-title text-xl">Hub Map <button onclick="toggleLessonNavigator()"><i class="fas fa-times text-white/50 hover:text-[var(--accent-pink)]"></i></button></div>
+        <div id="nav-steps-list" class="flex-grow overflow-y-auto p-4 space-y-2 bg-[#090f1e]"></div>
+    </aside>
+
+    <!-- Dicionário Inteligente -->
+    <aside id="smart-dict" class="fixed right-0 top-0 h-screen w-[400px] drawer flex flex-col pt-24 z-[5100]">
+        <div class="p-8 border-b border-white/5 flex justify-between items-center">
+            <h2 class="header-title text-2xl font-black text-[var(--accent-cyan)] tracking-tight"><i class="fas fa-database mr-2 text-white/50"></i> Smart Dict</h2>
+            <button onclick="toggleDict()"><i class="fas fa-times text-xl text-white/50 hover:text-[var(--accent-pink)]"></i></button>
+        </div>
+        <div id="dict-content" class="flex-grow overflow-y-auto p-8 bg-[#090f1e] text-[var(--text-main)]">
+            <div class="flex flex-col items-center justify-center h-full text-center opacity-30">
+                <i class="fas fa-search text-4xl mb-4"></i>
+                <p class="mono-text text-xs uppercase tracking-widest">Double-click any English word.</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- HUD do Professor -->
+    <aside id="teacher-hud" class="fixed right-0 top-0 h-screen w-[350px] drawer flex flex-col pt-24 z-[5100]">
+        <div class="p-8 border-b border-white/5 flex justify-between items-center">
+            <h2 class="header-title text-2xl font-black text-[var(--accent-green)] tracking-tight"><i class="fas fa-chalkboard-teacher mr-2"></i> Guide</h2>
+            <button onclick="toggleTeacherHUD()"><i class="fas fa-times text-xl text-white/50 hover:text-[var(--accent-pink)]"></i></button>
+        </div>
+        <div class="flex-grow overflow-y-auto p-8 space-y-8 bg-[#090f1e]">
+            <div class="bg-white/5 p-6 rounded-2xl border border-white/10">
+                <p class="text-[10px] font-bold text-[var(--accent-green)] uppercase tracking-widest mb-3 mono-text">Lesson Focus</p>
+                <p class="text-sm text-[#ccc] leading-relaxed">Level A1. Speak slowly. This lesson introduces the verb To Be visually. Use the "Follow Up" boxes at the bottom of the slides to encourage the student to speak.</p>
+            </div>
+            <div>
+                <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 mono-text">Send Praise</p>
+                <div class="space-y-4">
+                    <button onclick="triggerPraise('PERFECT!', 'Great grammar.')" class="w-full py-4 bg-[var(--accent-cyan)]/10 text-[var(--accent-cyan)] border border-[var(--accent-cyan)]/30 rounded-xl font-bold text-xs hover:bg-[var(--accent-cyan)] hover:text-black transition-all mono-text tracking-widest">SEND: CYAN</button>
+                    <button onclick="triggerPraise('EXCELLENT!', 'Good pronunciation.')" class="w-full py-4 bg-[var(--accent-green)]/10 text-[var(--accent-green)] border border-[var(--accent-green)]/30 rounded-xl font-bold text-xs hover:bg-[var(--accent-green)] hover:text-black transition-all mono-text tracking-widest">SEND: GREEN</button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Overlay de Elogio (Praise) -->
+    <div id="praise-overlay" class="fixed inset-0 z-[6000] flex items-center justify-center bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+        <div id="praise-card" class="hub-card p-16 rounded-[2rem] text-center transform scale-50 transition-transform duration-500 border-2">
+            <h2 id="praise-main" class="header-title text-5xl md:text-7xl font-black tracking-tighter uppercase mb-4 drop-shadow-lg"></h2>
+            <p id="praise-sub" class="text-xl font-bold tracking-widest uppercase mono-text mt-6 opacity-80"></p>
+        </div>
+    </div>
+
+    <!-- SCRIPT DO MOTOR PRINCIPAL -->
+    <script>
+        // --- ESTADO DO SISTEMA ---
+        let state = { hp: 100, xp: 0, current: 0 };
+        const esc = (s) => s ? s.replace(/'/g, "\\'").replace(/"/g, "&quot;") : "";
+        
+        const TYPES = { GUIDE: "Protocol", WARMUP: "Check-In", VOCAB: "Data", TAPE: "Media", GRAMMAR: "Logic", DRILL: "Analysis", TUNER: "System", BUILDER: "Construct", CHAT: "Sim", SPEAKING: "Voice", STAND: "Verify", WRAP: "End" };
+
+        function step(type, title, html) { return { type, title, html }; }
+
+        function updateHUD() {
+            const h = document.getElementById('hp-bar'); if(h) h.style.width = Math.max(0, state.hp) + '%';
+            const x = document.getElementById('xp-bar'); if(x) x.style.width = Math.min(100, (state.xp / 25)) + '%';
+        }
+
+        function insertTag(tag) { 
+            const text = document.getElementById('wb-text'); 
+            if (text) { text.value += (text.value.length > 0 ? '\n' : '') + tag + ' '; text.focus(); } 
+        }
+
+        function shuffleArray(array) {
+            let curId = array.length;
+            while (0 !== curId) {
+                let randId = Math.floor(Math.random() * curId); curId -= 1;
+                let tmp = array[curId]; array[curId] = array[randId]; array[randId] = tmp;
+            }
+            return array;
+        }
+
+        // --- TEMPLATES TEMÁTICOS (THE CONNECTION HUB A1) ---
+        
+        // Protocol (Guide)
+        const bGuide = (title, points) => step(TYPES.GUIDE, title, `
+            <div class="max-w-4xl mx-auto space-y-10 animate-in fade-in py-10">
+                <div class="hub-card border-t-4 border-[var(--accent-cyan)]">
+                    <p class="text-[var(--accent-cyan)] font-bold uppercase tracking-[0.4em] text-[10px] mono-text mb-6 flex items-center gap-3">
+                        <i class="fas fa-info-circle text-lg"></i> WOLF LABS | Module Briefing
+                    </p>
+                    <h2 class="text-5xl md:text-6xl font-black text-white tracking-tighter leading-none header-title mb-10 pb-8 border-b border-white/10">${title}</h2>
+                    <div class="space-y-6">
+                        ${points.map(p => `<p class="text-xl text-[#ccc] font-medium leading-relaxed flex items-start gap-4"><i class="fas fa-check-circle text-[var(--accent-green)] mt-1.5"></i> ${p}</p>`).join('')}
+                    </div>
+                </div>
+            </div>
+        `);
+
+        // Warm Up (Múltipla Escolha Visual)
+        const bVisualChoice = (id, title, prompt, options, correctIdx, followup, starter) => step(TYPES.WARMUP, title, `
+            <div class="max-w-5xl mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center space-y-12 animate-in fade-in">
+                <p class="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-[0.4em] mb-2 mono-text bg-white/5 border border-white/10 px-4 py-1.5 rounded-full">WOLF LABS | Icebreaker</p>
+                <h2 class="header-title text-4xl md:text-5xl font-black text-white tracking-tight leading-tight drop-shadow-md">${prompt}</h2>
+                
+                <div class="w-full grid grid-cols-1 md:grid-cols-3 gap-8" id="visual-options-${id}">
+                    ${options.map((opt, i) => `
+                        <div class="hub-card drill-row flex-col items-center justify-center text-center p-10 locked-check" onclick="handleVisualTrial('${id}', this, ${correctIdx === 0 || i === correctIdx}, '${esc(followup)}', '${esc(starter)}')">
+                            <span class="text-7xl block mb-6 drop-shadow-lg">${opt.icon}</span>
+                            <span class="text-2xl font-bold text-white header-title">${opt.text}</span>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div id="followup-box-${id}" class="hidden follow-up-box">
+                    <span class="text-4xl">🗣️</span>
+                    <div class="text-left w-full">
+                        <p class="text-[10px] font-bold text-[var(--accent-cyan)] uppercase tracking-widest mb-2 mono-text">Let's Talk</p>
+                        <p class="text-2xl font-bold text-white mb-2 leading-tight">${followup}</p>
+                        ${starter ? `<p class="text-lg font-bold text-[#888] mono-text mt-3">> "${starter}"</p>` : ''}
+                    </div>
+                </div>
+            </div>
+        `);
+
+        // Vocab Flip Cards
+        function bFlipCards(title, words) {
+            const nodesHtml = words.map(w => `
+                <div class="vocab-card w-[220px] h-[280px]" onclick="this.classList.toggle('flipped')">
+                    <div class="vocab-inner">
+                        <div class="vocab-front p-6">
+                            <div class="w-16 h-16 rounded-full bg-black/30 mb-6 flex items-center justify-center text-2xl text-[var(--accent-cyan)] border border-[var(--accent-cyan)]/50 shadow-[0_0_15px_rgba(0,240,255,0.2)]">
+                                <i class="fas fa-lock"></i>
+                            </div>
+                            <span class="font-bold text-[#888] text-lg header-title uppercase tracking-widest mb-4">Locked</span>
+                            <span class="mono-text text-[10px] text-[var(--accent-cyan)] mt-auto tracking-widest uppercase border border-[var(--accent-cyan)]/30 px-4 py-1.5 rounded-full bg-[var(--accent-cyan)]/10"><i class="fas fa-fingerprint mr-2"></i>Tap</span>
+                        </div>
+                        <div class="vocab-back p-6 flex flex-col justify-center text-center">
+                            <p class="header-title text-3xl font-black text-[var(--bg-deep)] mb-4 uppercase">${w.word}</p>
+                            <p class="text-[var(--bg-deep)] text-lg leading-relaxed font-bold border-t border-[var(--bg-deep)]/20 pt-4 mt-2">"${w.def}"</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            return step(TYPES.VOCAB, title, `
+                <div class="max-w-6xl mx-auto flex flex-col items-center py-10 animate-in fade-in">
+                    <div class="text-center mb-16">
+                        <p class="text-[10px] font-bold text-[var(--accent-cyan)] uppercase tracking-[0.4em] mb-4 mono-text bg-[var(--accent-cyan)]/10 inline-block px-5 py-2 rounded-full border border-[var(--accent-cyan)]/20">WOLF LABS | Vocabulary</p>
+                        <h2 class="header-title text-5xl font-black text-white tracking-tight drop-shadow-md">${title}</h2>
+                        <p class="text-[#888] text-lg mt-6">Click the locked cards to reveal the English words.</p>
+                    </div>
+                    <div class="flex flex-wrap justify-center gap-8">
+                        ${nodesHtml}
+                    </div>
+                </div>
+            `);
+        }
+
+        // The Tape (Video)
+        const bVideo = (title, videoId, instruction) => step(TYPES.TAPE, title, `
+            <div class="max-w-5xl mx-auto w-full flex flex-col items-center py-10 animate-in fade-in">
+                <div class="text-center mb-10">
+                    <p class="text-[10px] font-bold text-[#888] uppercase tracking-[0.4em] mb-4 mono-text"><i class="fas fa-play-circle mr-2 text-[var(--accent-cyan)]"></i> Media Player</p>
+                    <h2 class="header-title text-5xl font-black text-white tracking-tight drop-shadow-md">${title}</h2>
+                </div>
+                <div class="hub-card w-full max-w-4xl flex flex-col items-center p-10 border-t-4 border-[var(--accent-cyan)]">
+                    <p class="text-xl text-white font-medium mb-10 text-center max-w-2xl leading-relaxed">"${instruction}"</p>
+                    <div class="w-full aspect-video bg-black border border-white/10 shadow-2xl relative overflow-hidden rounded-2xl">
+                        <iframe class="absolute inset-0 w-full h-full" src="https://www.youtube.com/embed/${videoId}?rel=0" frameborder="0" allowfullscreen></iframe>
+                    </div>
+                </div>
+            </div>
+        `);
+
+        // Social Quiz (MCQ)
+        const bMCQ = (id, title, prompt, options, correctIdx, followup, starter) => step(TYPES.DRILL, title, `
+            <div class="max-w-4xl mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center space-y-12 animate-in fade-in">
+                <p class="text-[10px] font-bold text-[#888] uppercase tracking-[0.4em] mb-2 mono-text border border-white/10 px-4 py-1.5 rounded-full bg-white/5">Observation Check</p>
+                <h2 class="header-title text-4xl md:text-5xl font-black text-white tracking-tight leading-tight drop-shadow-md">${prompt}</h2>
+                
+                <div class="w-full max-w-2xl space-y-4" id="quiz-options-${id}">
+                    ${options.map((opt, i) => `
+                        <div class="drill-row locked-check" onclick="handleQuizTrial('${id}', this, ${i === correctIdx}, '${esc(followup)}', '${esc(starter)}')">
+                            <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-sm font-bold text-[#888] mr-6 border border-white/10">${String.fromCharCode(65 + i)}</div>
+                            <span class="text-2xl font-bold text-white text-left">${opt}</span>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div id="followup-box-${id}" class="hidden follow-up-box">
+                    <span class="text-4xl">🗣️</span>
+                    <div class="text-left w-full">
+                        <p class="text-[10px] font-bold text-[var(--accent-cyan)] uppercase tracking-widest mb-2 mono-text">Teacher Prompt</p>
+                        <p class="text-2xl font-bold text-white mb-2 leading-tight">${followup}</p>
+                        ${starter ? `<p class="text-lg font-bold text-[#888] mono-text mt-3">> "${starter}"</p>` : ''}
+                    </div>
+                </div>
+            </div>
+        `);
+
+        // Grammar Logic (Core)
+        const bGrammar = (title, rule, examples, question, starter) => step(TYPES.GRAMMAR, title, `
+            <div class="max-w-5xl mx-auto space-y-10 animate-in fade-in py-10">
+                <div class="text-center space-y-4 mb-16">
+                    <p class="text-[10px] font-bold text-[var(--accent-cyan)] uppercase tracking-[0.4em] mb-4 mono-text bg-[var(--accent-cyan)]/10 inline-block px-5 py-2 rounded-full border border-[var(--accent-cyan)]/20">WOLF LABS | Grammar Core</p>
+                    <h2 class="header-title text-5xl md:text-6xl font-black text-white tracking-tighter drop-shadow-md">${title}</h2>
+                </div>
+                <div class="hub-card mb-12 border-l-8 border-[var(--accent-green)] bg-gradient-to-r from-[var(--accent-green)]/10 to-transparent">
+                    <p class="text-2xl text-white font-medium leading-relaxed">${rule.replace(/\[(.*?)\]/g, '<span class="text-[var(--accent-green)] font-bold">$1</span>')}</p>
+                </div>
+                ${examples && examples.length > 0 ? `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                    ${examples.map(ex => `
+                        <div class="bg-black/40 border border-white/5 p-10 rounded-[2rem] shadow-lg text-center hover:bg-white/5 transition-colors">
+                            <p class="text-[10px] font-bold uppercase text-gray-500 tracking-widest mb-6 mono-text">${ex.context}</p>
+                            <p class="text-3xl font-bold text-white leading-tight header-title">"${ex.text.replace(/\[(.*?)\]/g, '<span class="text-[var(--accent-green)]">$1</span>')}"</p>
+                        </div>
+                    `).join('')}
+                </div>
+                ` : ''}
+                ${question ? `
+                <div class="w-full max-w-4xl mx-auto p-10 hub-card mt-8 flex flex-col text-center items-center border border-[var(--accent-cyan)]/30">
+                    <p class="text-[10px] font-bold text-[var(--accent-cyan)] uppercase tracking-widest mb-4 mono-text"><i class="fas fa-comment-dots mr-2"></i>Live Practice</p>
+                    <p class="text-3xl font-black text-white mb-6 leading-tight header-title">"${question}"</p>
+                    ${starter ? `<p class="text-lg font-bold text-[#888] mono-text">> "${starter}"</p>` : ''}
+                </div>
+                ` : ''}
+            </div>
+        `);
+
+        // Sentence Builder
+        function bBuilder(id, title, instruction, expectedArr) {
+            const safeExpectedStr = JSON.stringify(expectedArr).replace(/"/g, '&quot;');
+            let wordBtns = shuffleArray([...expectedArr]).map(w => `<span class="wb-pill text-2xl" onclick="moveWbWord(this, '${esc(w)}', '${id}')">${w}</span>`).join('');
+            return step(TYPES.BUILDER, title, `
+                <div class="max-w-4xl mx-auto w-full flex flex-col items-center py-10 animate-in fade-in" data-expected="${safeExpectedStr}" id="wb-data-${id}">
+                    <p class="text-[10px] font-bold text-[var(--accent-cyan)] uppercase tracking-[0.4em] mb-4 mono-text bg-[var(--accent-cyan)]/10 px-4 py-1.5 rounded-full">Sentence Builder</p>
+                    <h2 class="header-title text-4xl md:text-5xl font-black text-white tracking-tight mb-8 text-center">${title}</h2>
+                    <p class="text-[#888] text-xl mb-12 text-center">${instruction}</p>
+                    
+                    <div class="w-full hub-card text-center pb-16 border-t-4 border-[var(--accent-cyan)]">
+                        <div class="wb-dropzone font-body text-3xl" id="wb-dropzone-${id}"></div>
+                        <div class="flex justify-center flex-wrap gap-4 mt-16" id="wb-bank-${id}">
+                            ${wordBtns}
+                        </div>
+                        <button onclick="resetWb('${id}')" class="mt-12 text-sm font-bold text-[#666] hover:text-white uppercase tracking-widest transition mono-text"><i class="fas fa-undo mr-2"></i>Reset Sentence</button>
+                    </div>
+                    <div id="wb-fb-${id}" class="hidden mt-8 p-6 bg-[var(--accent-green)]/10 text-[var(--accent-green)] font-bold text-2xl rounded-2xl mono-text text-center w-full max-w-4xl border border-[var(--accent-green)]/20">> SENTENCE COMPLETE.</div>
+                </div>
+            `);
+        }
+
+        // Tuner (Toggle Switch)
+        const bTuner = (id, title, instruction, textAff, textAlt, feedback) => step(TYPES.TUNER, title, `
+            <div class="max-w-4xl mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center space-y-12 animate-in fade-in">
+                <p class="text-[10px] font-bold text-[#888] uppercase tracking-[0.4em] mb-2 mono-text border border-white/10 px-4 py-1.5 rounded-full bg-white/5">Interactive Tool</p>
+                <h2 class="header-title text-5xl md:text-6xl font-black text-white tracking-tight leading-tight">${title}</h2>
+                <p class="text-xl text-[#888] max-w-2xl">${instruction}</p>
+                
+                <div class="w-full max-w-3xl hub-card flex flex-col items-center py-16">
+                    <div class="flex items-center gap-8 mb-16">
+                        <span class="font-bold text-white mono-text tracking-widest text-lg w-32 text-right uppercase" id="mode-aff-${id}">STATE 1</span>
+                        <div class="relative inline-block w-20 h-10 align-middle select-none">
+                            <input type="checkbox" id="tuner-switch-${id}" class="tuner-checkbox absolute block w-6 h-6 rounded-full opacity-0 z-10 w-full h-full cursor-pointer" onchange="toggleTuner('${id}', this, '${esc(textAff)}', '${esc(textAlt)}', '${esc(feedback)}')">
+                            <label for="tuner-switch-${id}" class="tuner-label block overflow-hidden h-10 rounded-full bg-[#222] border-2 border-[#444] cursor-pointer transition-colors duration-300">
+                                <span class="tuner-knob absolute block w-8 h-8 m-1 bg-white rounded-full transition-transform duration-300 ease-in-out shadow-md"></span>
+                            </label>
+                        </div>
+                        <span class="font-bold text-[#888] mono-text tracking-widest text-lg w-32 text-left uppercase" id="mode-alt-${id}">STATE 2</span>
+                    </div>
+
+                    <div class="bg-black/50 w-full p-10 rounded-2xl flex items-center justify-center min-h-[160px] border border-white/5 shadow-inner">
+                        <p id="tuner-text-${id}" class="text-4xl font-bold tracking-wide transition-opacity duration-300 header-title text-white leading-relaxed">${textAff}</p>
+                    </div>
+                    
+                    <div id="tuner-fb-${id}" class="hidden mt-10 text-[var(--accent-green)] font-bold text-xl mono-text">
+                        > ${feedback}
+                    </div>
+                </div>
+            </div>
+        `);
+
+        // Bamboozle (Fact or Myth)
+        const bBamboozle = (title, statement1, statement2) => step(TYPES.STAND, title, `
+            <div class="max-w-5xl mx-auto w-full flex flex-col items-center py-10 animate-in fade-in">
+                <p class="text-[10px] font-bold text-[#888] uppercase tracking-[0.4em] mb-6 mono-text border border-white/10 px-4 py-1.5 rounded-full bg-white/5">Fact or Myth</p>
+                <h2 class="header-title text-5xl font-black text-white tracking-tight mb-16 text-center">${title}</h2>
+                
+                <div id="bamb-q1" class="w-full max-w-4xl hub-card text-center mb-8 border-t-4 border-[var(--accent-cyan)]">
+                    <p class="text-3xl font-bold text-white leading-relaxed header-title mb-12">${statement1.text.replace(/\[(.*?)\]/g, '<span class="text-[var(--accent-cyan)]">$1</span>')}</p>
+                    <div class="flex gap-6 justify-center">
+                        <button class="btn-cyan px-12 py-4 text-xl bg-[var(--accent-cyan)] text-black font-bold rounded-full hover:bg-[#33F4FF] transition" onclick="checkBamb(1, ${statement1.isTrue})">FACT</button>
+                        <button class="btn-outline px-12 py-4 text-xl" onclick="checkBamb(1, ${!statement1.isTrue})">MYTH</button>
+                    </div>
+                </div>
+                
+                <div id="bamb-q2" class="hidden w-full max-w-4xl hub-card text-center mb-8 border-t-4 border-[var(--accent-pink)]">
+                    <p class="text-3xl font-bold text-white leading-relaxed header-title mb-12">${statement2.text.replace(/\[(.*?)\]/g, '<span class="text-[var(--accent-pink)]">$1</span>')}</p>
+                    <div class="flex gap-6 justify-center">
+                        <button class="btn-cyan px-12 py-4 text-xl bg-[var(--accent-pink)] text-white border-none font-bold rounded-full hover:bg-[#ff7b93] transition" onclick="checkBamb(2, ${statement2.isTrue})">FACT</button>
+                        <button class="btn-outline px-12 py-4 text-xl" style="border-color: var(--accent-pink); color: var(--accent-pink);" onclick="checkBamb(2, ${!statement2.isTrue})">MYTH</button>
+                    </div>
+                </div>
+                
+                <div id="bamb-fb" class="hidden mt-8 p-6 bg-[var(--accent-green)]/10 text-[var(--accent-green)] font-bold text-2xl mono-text text-center w-full max-w-4xl rounded-xl border border-[var(--accent-green)]/20">> ANALYSIS COMPLETE.</div>
+            </div>
+        `);
+
+        // The Fixer (Profile Correction)
+        function bFixer(title, codeLines, expectedFixes, wordBank) {
+            let expectedFixesCopy = [...expectedFixes]; 
+            let htmlLines = codeLines.map((line, i) => {
+                return line.replace(/\[(.*?)\]/g, (match, word) => {
+                    const fixData = expectedFixesCopy.shift();
+                    return `<span class="bug-word" onclick="triggerFixer(this, '${esc(fixData.ans)}')">${word}</span>`;
+                });
+            }).join('<br><br>');
+
+            let bankHtml = '';
+            if(wordBank) {
+                bankHtml = `<div class="flex flex-wrap gap-2 mt-4 w-full justify-center lg:justify-start">` + 
+                    wordBank.map(w => `<button onclick="document.getElementById('fix-input').value='${esc(w)}'; document.getElementById('fix-input').focus();" class="px-4 py-2 bg-white/10 hover:bg-[var(--accent-cyan)] hover:text-black rounded-lg border border-white/20 transition-colors text-sm font-bold mono-text">${w}</button>`).join('') +
+                    `</div>`;
+            }
+
+            return step(TYPES.DRILL, title, `
+                <div class="max-w-4xl mx-auto w-full flex flex-col items-center py-10 animate-in fade-in">
+                    <p class="text-[10px] font-bold text-[var(--accent-pink)] uppercase tracking-[0.4em] mb-4 mono-text bg-[var(--accent-pink)]/10 px-4 py-1.5 rounded-full animate-pulse">Syntax Errors</p>
+                    <h2 class="header-title text-4xl md:text-5xl font-black text-white tracking-tight mb-8 text-center">${title}</h2>
+                    <p class="text-[#888] text-xl mb-12 text-center">Click the red bugs to correct these social profiles.</p>
+                    
+                    <div class="w-full hub-card relative overflow-hidden text-2xl leading-relaxed text-[#ccc] border-t-4 border-[var(--accent-pink)] pb-32">
+                        <div class="flex items-center justify-between border-b border-white/10 pb-6 mb-8">
+                            <p class="text-xs text-[#666] mono-text uppercase tracking-widest font-bold">Profiles.db</p>
+                            <i class="fas fa-bug text-[var(--accent-pink)] text-2xl"></i>
+                        </div>
+                        <div class="font-medium mono-text">
+                            ${htmlLines}
+                        </div>
+                        
+                        <!-- Input -->
+                        <div id="fix-panel" class="absolute bottom-0 left-0 w-full bg-[#111] border-t-2 border-[var(--accent-green)] p-8 transform translate-y-full transition-transform duration-300 flex flex-col gap-4 z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.8)]">
+                            <div class="flex items-center gap-6 w-full">
+                                <span class="text-[var(--accent-green)] font-bold text-xl mono-text">> FIX:</span>
+                                <input type="text" id="fix-input" class="bg-black text-white border border-white/20 rounded-xl px-6 py-4 flex-1 text-2xl focus:outline-none focus:border-[var(--accent-green)] mono-text font-bold" autocomplete="off" placeholder="Type or select correct word...">
+                                <button onclick="submitFixer()" class="btn-cyan !bg-[var(--accent-green)] !shadow-[0_4px_20px_rgba(0,255,163,0.3)] px-10 py-4 text-lg text-black hover:!bg-[#33ffb3]">PATCH</button>
+                            </div>
+                            ${bankHtml}
+                        </div>
+                    </div>
+                    <div id="fixer-hub" class="hidden mt-10 text-[var(--accent-green)] mono-text font-bold text-xl bg-[var(--accent-green)]/10 p-6 rounded-xl border border-[var(--accent-green)]/20">> PROFILES FIXED PERFECTLY.</div>
+                </div>
+            `);
+        }
+
+        // Interactive Chat Simulator
+        function bInteractiveChat(id, title, messages) {
+            let htmlMsgs = messages.map((m, index) => {
+                if (m.options) {
+                    return `
+                        <div class="chat-step hidden w-full flex flex-col items-end" id="chat-step-${id}-${index}">
+                            <p class="text-[10px] text-[var(--accent-cyan)] font-bold uppercase tracking-widest mono-text mb-2 text-right">Choose your reply:</p>
+                            <div class="flex flex-col gap-2 w-full max-w-[80%] items-end">
+                                ${m.options.map((opt, i) => `
+                                    <button class="w-full text-left bg-[#111] hover:bg-white/10 border border-white/20 p-4 rounded-xl transition-all font-medium text-white text-lg shadow-sm" onclick="handleChatOption('${id}', ${index}, ${opt.correct}, '${esc(opt.text)}')">${opt.text}</button>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="chat-bubble-right hidden" id="chat-bubble-${id}-${index}">
+                            <p></p>
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div class="chat-step ${index === 0 ? 'block' : 'hidden'} w-full" id="chat-step-${id}-${index}">
+                            <div class="chat-bubble-left">
+                                <p>${m.text}</p>
+                            </div>
+                            <div class="text-left mt-2">
+                                <button class="text-[10px] bg-[var(--accent-cyan)]/20 text-[var(--accent-cyan)] px-4 py-1.5 rounded-full uppercase tracking-widest font-bold mono-text hover:bg-[var(--accent-cyan)] hover:text-black transition-colors" onclick="nextChatStep('${id}', ${index})">Next Message <i class="fas fa-arrow-down ml-1"></i></button>
+                            </div>
+                        </div>
+                    `;
+                }
+            }).join('');
+
+            return step(TYPES.CHAT, title, `
+                <div class="max-w-4xl mx-auto flex flex-col items-center justify-center min-h-[60vh] py-10 animate-in fade-in" data-total="${messages.length}">
+                    <p class="text-[10px] font-bold text-[#888] uppercase tracking-[0.4em] mb-4 mono-text bg-white/5 px-4 py-1.5 rounded-full border border-white/10">Interactive Simulation</p>
+                    <h2 class="header-title text-4xl md:text-5xl font-black text-white tracking-tight mb-10 text-center">${title}</h2>
+                    <p class="text-[#888] text-xl mb-8 text-center">Reply to the messages to continue the conversation.</p>
+                    
+                    <div class="w-full max-w-md bg-black rounded-[2rem] border-4 border-[#181818] overflow-hidden h-[500px] flex flex-col shadow-2xl relative">
+                        <div class="bg-[#111] p-4 text-center font-bold border-b border-white/5 flex items-center justify-center gap-3 text-lg z-10 shadow-sm">
+                            <div class="w-10 h-10 rounded-full bg-[var(--accent-blue)] flex items-center justify-center text-white"><i class="fas fa-user"></i></div>
+                            Peter
+                        </div>
+                        <div class="flex-1 p-6 overflow-y-auto space-y-4 flex flex-col font-medium" id="chat-container-${id}">
+                            ${htmlMsgs}
+                        </div>
+                    </div>
+                    <div id="chat-fb-${id}" class="hidden mt-8 text-[var(--accent-green)] font-bold text-xl mono-text bg-[var(--accent-green)]/10 px-6 py-3 rounded-full border border-[var(--accent-green)]/30">> CONVERSATION COMPLETE</div>
+                </div>
+            `);
+        }
+
+        // Cheat Sheet
+        const bCheatSheet = (title, instruction, phrases) => step(TYPES.SPEAKING, title, `
+            <div class="max-w-5xl mx-auto flex flex-col items-center justify-center min-h-[60vh] py-10 animate-in fade-in">
+                <p class="text-[10px] font-bold text-[var(--accent-green)] uppercase tracking-[0.4em] mb-4 mono-text bg-[var(--accent-green)]/10 px-4 py-1.5 rounded-full border border-[var(--accent-green)]/20">WOLF LABS | Survival Kit</p>
+                <h2 class="header-title text-4xl md:text-6xl font-black text-white tracking-tight mb-8 text-center">${title}</h2>
+                <p class="text-[#888] text-xl mb-12 text-center max-w-2xl">${instruction}</p>
+                <div class="w-full max-w-3xl space-y-4">
+                    ${phrases.map(p => `
+                        <div class="hub-card p-6 border-l-4 border-[var(--accent-green)] flex items-center justify-between shadow-lg">
+                            <span class="text-2xl font-bold font-body">"${p.en}"</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `);
+
+        // Roleplay
+        const bRoleplay = (title, prompt, bullets, starter) => step(TYPES.SPEAKING, title, `
+            <div class="max-w-5xl mx-auto w-full flex flex-col items-center justify-center min-h-[60vh] text-center animate-in fade-in py-10 relative">
+                <div class="z-10 flex flex-col items-center w-full">
+                    <div class="flex items-center gap-3 mb-10 bg-[var(--accent-blue)]/10 text-[var(--accent-blue)] px-6 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-[0.3em] border border-[var(--accent-blue)]/30 mono-text">
+                        <i class="fas fa-microphone"></i> Live Simulation
+                    </div>
+                    <h2 class="header-title text-5xl md:text-7xl font-black tracking-tighter text-white leading-tight mb-12 uppercase">${prompt}</h2>
+                    
+                    ${bullets ? `<div class="flex flex-wrap justify-center gap-4 max-w-3xl mb-16">${bullets.map(b => `<span class="px-8 py-4 hub-card text-white font-bold text-xl border border-white/5">${b}</span>`).join('')}</div>` : ''}
+                    
+                    <div class="w-full max-w-3xl p-10 hub-card text-left shadow-2xl mt-4 border-t-4 border-[var(--accent-green)] bg-gradient-to-b from-[var(--accent-green)]/5 to-transparent">
+                        <div class="flex justify-between items-center cursor-pointer" onclick="toggleStarter(this)">
+                            <div class="flex items-center gap-4">
+                                <i class="fas fa-lightbulb text-[var(--accent-gold)] text-2xl"></i>
+                                <span class="header-title text-white font-bold tracking-widest uppercase text-xl">Cheat Sheet (Hints)</span>
+                            </div>
+                            <i class="fas fa-chevron-down text-white/50 text-xl"></i>
+                        </div>
+                        <div class="starter-content text-left">
+                            <div class="bg-black/50 p-8 rounded-xl border border-white/5 mt-6 shadow-inner">
+                                <p class="text-3xl font-bold text-white leading-tight italic font-body">"${starter}"</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `);
+
+        const bWrap = () => step(TYPES.WRAP, "Mission Complete", `
+            <div class="text-center max-w-3xl mx-auto flex flex-col items-center justify-center min-h-[60vh] animate-in fade-in">
+                <div class="w-40 h-40 rounded-full bg-[var(--accent-green)]/10 mx-auto flex items-center justify-center text-7xl text-[var(--accent-green)] mb-12 shadow-[0_0_60px_rgba(29,185,84,0.3)] border border-[var(--accent-green)]/30">
+                    <i class="fas fa-check"></i>
+                </div>
+                <h1 class="header-title text-6xl md:text-8xl font-black text-white tracking-tighter mb-6 uppercase">Sync Complete</h1>
+                <p class="text-2xl text-[#888] mb-16 font-medium">You survived your first contact and mastered the Verb To Be!</p>
+                <button onclick="goHome()" class="btn-cyan px-14 py-5 text-xl">Return to Hub</button>
+            </div>
+        `);
+
+        // --- LESSON DATA (A1 Hello World) ---
+        const lessonData = [
+            bGuide("Module Briefing", [
+                "Level: A1 Absolute Beginner.", 
+                "Focus: Verb To Be (Am / Is / Are) & Greetings.",
+                "Theme: First Contact, Introducing Yourself.",
+                "Goal: Start a basic conversation in English."
+            ]),
+            
+            bVisualChoice("warmup", "Icebreaker", "How do you say 'Hello' in your country?", [
+                {icon: "🤝", text: "Handshake"}, {icon: "🫂", text: "Hug / Kiss"}, {icon: "👋", text: "Wave"}
+            ], 0, "Do you like meeting new people?", "Yes, I like it / No, I don't."),
+
+            bFlipCards("Pre-Watch Vocab", [
+                {word: "Hello", def: "A word to greet someone."},
+                {word: "Name", def: "What people call you (e.g. Maria)."},
+                {word: "Meet", def: "To see and speak to someone for the first time."},
+                {word: "You", def: "The person I am speaking to."}
+            ]),
+
+            bVideo("The Mixer Event", "I_tRSrPru94", "Mission: Don't try to understand everything. Just listen and celebrate when you hear: Hello, Name, Meet, You."),
+
+            bMCQ("comp1", "Vibe Check", "In the video, what are they doing?", [
+                "Saying goodbye forever.", 
+                "Fighting with each other.", 
+                "Meeting for the first time."
+            ], 2, "How do they feel? Happy or sad?", "They look happy."),
+
+            bGrammar("I am vs My name is", "To introduce yourself, you can use the pronoun [I am] or the possessive [My name is]. Both are perfect!", [
+                {text: "[I am] Alex.", context: "Using the pronoun 'I'"},
+                {text: "[My name is] Alex.", context: "Using possessive 'My'"}
+            ], "Introduce yourself to the teacher.", "Hello, my name is..."),
+
+            bGrammar("Asking Questions", "To ask someone's name, use the question word [What] and the possessive [Your].", [
+                {text: "[What] is [your] name?", context: "The standard question"}
+            ], "Ask the teacher's name.", "Excuse me, what is your..."),
+
+            bBuilder("wb1", "Sentence Builder", "Build the question.", ["What", "is", "your", "name", "?"]),
+
+            bGrammar("Third Person", "When talking about a man, use [He is]. When talking about a woman, use [She is].", [
+                {text: "[He is] Tim.", context: "Third person (Man)"},
+                {text: "[She is] Sian.", context: "Third person (Woman)"}
+            ]),
+
+            bGrammar("Possessives", "Use [His] for a man's things/name. Use [Her] for a woman's things/name.", [
+                {text: "[His] name is Tim.", context: "Possessive for a man"},
+                {text: "[Her] name is Sian.", context: "Possessive for a woman"}
+            ]),
+
+            bTuner("t1", "The ID Scanner", "Toggle the switch to change the profile gender.", "<span class='text-[var(--accent-cyan)]'>He is</span> Tim. <br><span class='text-[var(--accent-cyan)]'>His</span> name is Tim.", "<span class='text-[var(--accent-pink)]'>She is</span> Sian. <br><span class='text-[var(--accent-pink)]'>Her</span> name is Sian.", "Notice how He -> His, and She -> Her!"),
+
+            bMCQ("q2", "Profile Check", "Look at the avatar 👩. Which sentence is correct?", [
+                "His name is Georgie.", 
+                "Her name is Georgie.", 
+                "She name is Georgie."
+            ], 1, "What is your best friend's name?", "Her/His name is..."),
+
+            bBamboozle("Fact or Myth", 
+                {text: "'His' is used for women.", isTrue: false}, 
+                {text: "'My name is' and 'I am' mean the same thing.", isTrue: true}
+            ),
+
+            bGrammar("Greetings", "To ask how someone is feeling, say [How are you?] or [How is it going?].", [
+                {text: "How [are] you?", context: "Formal / Standard"},
+                {text: "How [is] it going?", context: "Casual"}
+            ]),
+
+            bFixer("Profile Fixer 1", [
+                "Hello, I [is] John.", 
+                "What is [you] name?"
+            ], [{ans:"am"}, {ans:"your"}], ["am", "are", "is", "your", "my"]),
+
+            bFixer("Profile Fixer 2", [
+                "[He am] Tim.", 
+                "[She] name is Georgie."
+            ], [{ans:"he is"}, {ans:"her"}], ["he is", "she is", "her", "his"]),
+
+            bFlipCards("Response Vocab", [
+                {word: "Fine", def: "Good, okay. (Bem)"},
+                {word: "Great", def: "Very good! (Ótimo)"},
+                {word: "Not bad", def: "Okay, normal. (Nada mal)"},
+                {word: "Thanks", def: "Thank you. (Obrigado/a)"}
+            ]),
+
+            bInteractiveChat("chat1", "Live Chat", [
+                {sender: 'B', text: 'Hello! What is your name?'},
+                {sender: 'A', options: [
+                    {text: 'Hi! My name is Alex. And you?', correct: true},
+                    {text: 'I am fine, thanks.', correct: false}
+                ]},
+                {sender: 'B', text: 'I am Peter. Nice to meet you, Alex.'},
+                {sender: 'A', options: [
+                    {text: 'What is your name?', correct: false},
+                    {text: 'Nice to meet you too. How are you?', correct: true}
+                ]},
+                {sender: 'B', text: 'I am fine, thank you!'}
+            ]),
+
+            bMCQ("q3", "Chat Check", "Are the people in the chat angry or polite?", [
+                "Angry", 
+                "Polite"
+            ], 1, "How do you respond to 'How are you?'", "I usually say..."),
+
+            bCheatSheet("Speaking Starters", "Keep these phrases ready in your mind for the next missions.", [
+                {en: "Hello, my name is...", pt: ""},
+                {en: "Nice to meet you.", pt: ""},
+                {en: "How are you?", pt: ""},
+                {en: "I am fine, thank you.", pt: ""},
+                {en: "Sorry, can you repeat?", pt: ""}
+            ]),
+
+            bRoleplay("Node 1: The Party", "You are at a networking event. Introduce yourself.", ["Say Hello", "Say your name", "Ask their name"], "Hi! I am... What is your name?"),
+            
+            bRoleplay("Node 2: The Colleague", "The teacher points to a picture of a man. Ask about him.", ["Use 'Who'", "Use 'He' or 'His'"], "Who is he? What is his name?"),
+
+            bWrap()
+        ];
+
+        // --- LÓGICA DE RUNTIME ---
+        function toggleElementClass(id, action, className) {
+            const el = document.getElementById(id);
+            if (el) {
+                if (action === 'add') el.classList.add(className);
+                else if (action === 'remove') el.classList.remove(className);
+            }
+        }
+
+        function startMission() {
+            toggleElementClass('dashboard', 'add', 'hidden'); 
+            toggleElementClass('dashboard', 'remove', 'flex');
+            toggleElementClass('hud-top', 'remove', 'hidden'); 
+            toggleElementClass('hud-top', 'add', 'flex');
+            toggleElementClass('mission-arena', 'remove', 'hidden'); 
+            toggleElementClass('mission-arena', 'add', 'flex');
+            toggleElementClass('nav-console', 'remove', 'hidden'); 
+            toggleElementClass('nav-console', 'add', 'flex');
+            buildLessonNavigator(); 
+            renderStep();
+        }
+
+        function goHome() {
+            toggleElementClass('dashboard', 'remove', 'hidden'); 
+            toggleElementClass('dashboard', 'add', 'flex');
+            toggleElementClass('hud-top', 'add', 'hidden'); 
+            toggleElementClass('hud-top', 'remove', 'flex');
+            toggleElementClass('mission-arena', 'add', 'hidden'); 
+            toggleElementClass('mission-arena', 'remove', 'flex');
+            toggleElementClass('nav-console', 'add', 'hidden'); 
+            toggleElementClass('nav-console', 'remove', 'flex');
+            state.current = 0; 
+            updateHUD();
+            document.getElementById('whiteboard')?.classList.remove('active');
+            document.getElementById('lesson-navigator')?.classList.remove('active');
+            document.getElementById('smart-dict')?.classList.remove('active');
+            document.getElementById('teacher-hud')?.classList.remove('active');
+            
+            const pTitle = document.getElementById('console-title');
+            if(pTitle) pTitle.innerHTML = 'WOLF <span class="text-[var(--accent-green)]">LABS</span>';
+            const pType = document.getElementById('console-type');
+            if(pType) pType.innerText = 'A1 MODULE';
+            const sCount = document.getElementById('console-counter');
+            if(sCount) sCount.innerText = 'START';
+            const progBar = document.getElementById('progress-bar');
+            if(progBar) progBar.style.width = '0%';
+        }
+
+        function renderStep() {
+            if (!lessonData || !lessonData[state.current]) return;
+            const step = lessonData[state.current];
+            const pTitle = document.getElementById('console-title'); if(pTitle) pTitle.innerText = step.title;
+            const pType = document.getElementById('console-type'); if(pType) pType.innerText = step.type;
+            const sCount = document.getElementById('console-counter'); if(sCount) sCount.innerText = `SLIDE ${String(state.current + 1).padStart(2, '0')} / ${lessonData.length}`;
+            const content = document.getElementById('mission-content'); if(content) content.innerHTML = `<div class="w-full max-w-7xl mx-auto">${step.html}</div>`;
+            updateHUD();
+            
+            const navList = document.getElementById('nav-steps-list');
+            if (navList) {
+                Array.from(navList.children).forEach((btn, i) => {
+                    if(i === state.current) { btn.classList.add('bg-[var(--accent-green)]/10', 'text-[var(--accent-green)]', 'font-bold', 'border-l-4', 'border-[var(--accent-green)]'); btn.classList.remove('text-[#888]', 'hover:bg-white/5'); } 
+                    else { btn.classList.remove('bg-[var(--accent-green)]/10', 'text-[var(--accent-green)]', 'font-bold', 'border-l-4', 'border-[var(--accent-green)]'); btn.classList.add('text-[#888]', 'hover:bg-white/5'); }
+                });
+            }
+            if (step.type === TYPES.BUILDER) setTimeout(setupWb, 100);
+        }
+
+        function nextStep() { 
+            const dash = document.getElementById('dashboard');
+            if (!dash.classList.contains('hidden')) {
+                startMission();
+            } else if (state.current < lessonData.length - 1) { 
+                state.current++; 
+                renderStep(); 
+            } else { 
+                goHome(); 
+            } 
+        }
+        
+        function prevStep() { 
+            const dash = document.getElementById('dashboard');
+            if (!dash.classList.contains('hidden')) return;
+            
+            if (state.current > 0) { 
+                state.current--; 
+                renderStep(); 
+            } else {
+                goHome();
+            }
+        }
+        
+        function toggleWhiteboard() { document.getElementById('whiteboard').classList.toggle('active'); document.getElementById('lesson-navigator')?.classList.remove('active'); document.getElementById('smart-dict')?.classList.remove('active'); document.getElementById('teacher-hud')?.classList.remove('active'); }
+        function toggleLessonNavigator() { document.getElementById('lesson-navigator').classList.toggle('active'); document.getElementById('whiteboard')?.classList.remove('active'); document.getElementById('smart-dict')?.classList.remove('active'); document.getElementById('teacher-hud')?.classList.remove('active'); }
+        function toggleDict() { document.getElementById('smart-dict').classList.toggle('active'); document.getElementById('whiteboard')?.classList.remove('active'); document.getElementById('lesson-navigator')?.classList.remove('active'); document.getElementById('teacher-hud')?.classList.remove('active'); }
+        function toggleTeacherHUD() { document.getElementById('teacher-hud').classList.toggle('active'); document.getElementById('whiteboard')?.classList.remove('active'); document.getElementById('lesson-navigator')?.classList.remove('active'); document.getElementById('smart-dict')?.classList.remove('active'); }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(err => console.log(err)); } 
+            else { if (document.exitFullscreen) document.exitFullscreen(); }
+        }
+
+        function toggleStarter(btn) {
+            const content = btn.nextElementSibling;
+            if (content.classList.contains('open')) { content.classList.remove('open'); } else { content.classList.add('open'); }
+        }
+
+        // --- LÓGICA DOS MINIJOGOS ---
+
+        // Visual Choice (MCQ) & Social Quiz
+        function handleVisualTrial(id, row, isCorrect, followup, starter) {
+            if(row.classList.contains('locked-check')) {
+                const parent = row.parentElement; 
+                Array.from(parent.children).forEach(child => { child.onclick = null; child.classList.add('opacity-40', 'cursor-default'); child.classList.remove('locked-check');});
+                row.classList.remove('opacity-40'); 
+                
+                if(isCorrect) {
+                    row.classList.add('correct'); state.xp += 2; updateHUD(); shootConfetti();
+                    const fBox = document.getElementById(`followup-box-${id}`); if(fBox) fBox.classList.remove('hidden');
+                } else { row.classList.add('wrong'); state.hp -= 10; updateHUD(); }
+            }
+        }
+        
+        function handleQuizTrial(id, row, isCorrect, followup, starter) {
+            handleVisualTrial(id, row, isCorrect, followup, starter);
+        }
+
+        // Grammar Tuner
+        function toggleTuner(id, checkbox, textAff, textAlt, feedback) {
+            const textEl = document.getElementById(`tuner-text-${id}`);
+            const aff = document.getElementById(`mode-aff-${id}`);
+            const alt = document.getElementById(`mode-alt-${id}`);
+            textEl.style.opacity = 0;
+            setTimeout(() => {
+                if(checkbox.checked) {
+                    aff.classList.replace('text-white', 'text-[#888]'); alt.classList.replace('text-[#888]', 'text-[var(--accent-pink)]');
+                    textEl.innerHTML = textAlt; document.getElementById(`tuner-fb-${id}`).classList.remove('hidden');
+                } else {
+                    aff.classList.replace('text-[#888]', 'text-white'); alt.classList.replace('text-[var(--accent-pink)]', 'text-[#888]');
+                    textEl.innerHTML = textAff; document.getElementById(`tuner-fb-${id}`).classList.add('hidden');
+                }
+                textEl.style.opacity = 1;
+            }, 200);
+        }
+
+        // Word Builder
+        let wbState = {};
+        function setupWb() {
+            document.querySelectorAll('[id^="wb-data-"]').forEach(el => {
+                const id = el.id.replace('wb-data-', '');
+                wbState[id] = { current: [], expected: JSON.parse(el.dataset.expected) };
+            });
+        }
+        function moveWbWord(pill, word, id) {
+            if(pill.classList.contains('used')) return;
+            if(!wbState[id]) return;
+            wbState[id].current.push(word); pill.classList.add('used');
+            const dz = document.getElementById(`wb-dropzone-${id}`);
+            const newPill = document.createElement('span'); newPill.className = 'pill-in-zone'; newPill.innerText = word; dz.appendChild(newPill);
+            if(wbState[id].current.length === wbState[id].expected.length) {
+                let win = wbState[id].current.every((val, index) => val === wbState[id].expected[index]);
+                if(win) { document.getElementById(`wb-fb-${id}`).classList.remove('hidden'); state.xp += 2; updateHUD(); shootConfetti(); }
+                else { dz.classList.add('shake', 'border-[var(--hp-red)]'); state.hp -= 10; updateHUD(); setTimeout(() => dz.classList.remove('shake', 'border-[var(--hp-red)]'), 400); }
+            }
+        }
+        function resetWb(id) {
+            if(!wbState[id]) return;
+            wbState[id].current = []; document.getElementById(`wb-dropzone-${id}`).innerHTML = ''; document.getElementById(`wb-fb-${id}`).classList.add('hidden');
+            document.getElementById(`wb-bank-${id}`).querySelectorAll('.wb-pill').forEach(p => p.classList.remove('used'));
+        }
+
+        // The Fixer
+        let activeBug = null; let expectedFix = ""; let bugsFixed = 0;
+        function triggerFixer(el, answer) {
+            if(el.classList.contains('symptom-fixed')) return;
+            activeBug = el; expectedFix = answer;
+            const panel = document.getElementById('fix-panel'); panel.classList.remove('translate-y-full');
+            document.getElementById('fix-input').value = ''; document.getElementById('fix-input').focus();
+        }
+        function submitFixer() {
+            const input = document.getElementById('fix-input').value.trim().toLowerCase();
+            const panel = document.getElementById('fix-panel');
+            if(input === expectedFix.toLowerCase()) {
+                activeBug.innerText = expectedFix; activeBug.classList.remove('symptom-word'); activeBug.classList.add('symptom-fixed');
+                panel.classList.add('translate-y-full');
+                const container = activeBug.closest('.hub-card');
+                const remaining = container.querySelectorAll('.symptom-word').length;
+                if(remaining === 0) { shootConfetti(); state.xp += 2; updateHUD(); document.getElementById('fixer-hub').classList.remove('hidden');}
+            } else {
+                const inputEl = document.getElementById('fix-input'); inputEl.classList.add('shake', 'border-[var(--hp-red)]');
+                state.hp -= 10; updateHUD();
+                setTimeout(() => inputEl.classList.remove('shake', 'border-[var(--hp-red)]'), 400);
+            }
+        }
+        document.getElementById('fix-input')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') submitFixer(); });
+
+        // Interactive Chat Simulator
+        function nextChatStep(id, currentIndex) {
+            const nextIndex = currentIndex + 1;
+            const nextStepEl = document.getElementById(`chat-step-${id}-${nextIndex}`);
+            
+            const currentBtn = document.querySelector(`#chat-step-${id}-${currentIndex} button`);
+            if(currentBtn && currentBtn.innerText.includes('Next Message')) currentBtn.classList.add('hidden');
+
+            if (nextStepEl) {
+                nextStepEl.classList.remove('hidden');
+                nextStepEl.classList.add('block', 'animate-in', 'fade-in');
+                const container = document.getElementById(`chat-container-${id}`);
+                setTimeout(() => container.scrollTop = container.scrollHeight, 100);
+            } else {
+                document.getElementById(`chat-fb-${id}`).classList.remove('hidden');
+                shootConfetti();
+                state.xp += 5; updateHUD();
+            }
+        }
+
+        function handleChatOption(id, currentIndex, isCorrect, text) {
+            if (!isCorrect) {
+                const stepEl = document.getElementById(`chat-step-${id}-${currentIndex}`);
+                stepEl.classList.add('shake', 'border', 'border-[var(--hp-red)]', 'rounded-xl', 'p-2');
+                setTimeout(() => stepEl.classList.remove('shake', 'border', 'border-[var(--hp-red)]', 'rounded-xl', 'p-2'), 400);
+                state.hp -= 5; updateHUD();
+                return;
+            }
+
+            const stepEl = document.getElementById(`chat-step-${id}-${currentIndex}`);
+            stepEl.classList.add('hidden'); 
+            stepEl.classList.remove('block', 'flex'); 
+
+            const bubbleEl = document.getElementById(`chat-bubble-${id}-${currentIndex}`);
+            bubbleEl.querySelector('p').innerText = text;
+            bubbleEl.classList.remove('hidden');
+            bubbleEl.classList.add('block', 'animate-in', 'fade-in');
+
+            const container = document.getElementById(`chat-container-${id}`);
+            setTimeout(() => container.scrollTop = container.scrollHeight, 100);
+
+            setTimeout(() => {
+                nextChatStep(id, currentIndex);
+            }, 1000);
+        }
+
+        // Bamboozle
+        function checkBamb(q, isCorrect) {
+            const container = document.getElementById(`bamb-q${q}`);
+            if(isCorrect) {
+                container.classList.add('hidden');
+                if(q === 1) document.getElementById('bamb-q2').classList.remove('hidden');
+                else { document.getElementById('bamb-fb').classList.remove('hidden'); shootConfetti(); }
+            } else {
+                container.classList.add('shake', 'border-4', 'border-[var(--hp-red)]');
+                setTimeout(() => container.classList.remove('shake', 'border-4', 'border-[var(--hp-red)]'), 400);
+            }
+        }
+
+        // SMART DICTIONARY API
+        document.addEventListener('dblclick', async (e) => {
+            if(e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            const selection = window.getSelection().toString().trim();
+            if(selection && /^[A-Za-z]+$/.test(selection)) { 
+                const panel = document.getElementById('smart-dict');
+                const content = document.getElementById('dict-content');
+                panel.classList.remove('translate-x-full');
+                content.innerHTML = `<div class="flex justify-center mt-10"><span class="text-[var(--accent-cyan)] font-bold animate-pulse mono-text">Analyzing term...</span></div>`;
+                
+                try {
+                    const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${selection.toLowerCase()}`);
+                    const data = await response.json();
+                    if(data.title) { content.innerHTML = `<p class="text-center text-[var(--hp-red)] mt-10 font-bold mono-text">Term not recognized.</p>`; return; }
+                    
+                    const word = data[0].word; const phonetic = data[0].phonetic || '';
+                    const meaningsHtml = data[0].meanings.map(m => `
+                        <div class="mb-4 bg-white/5 p-5 rounded-2xl border border-white/10 shadow-sm relative">
+                            <span class="text-[var(--accent-green)] text-xs font-bold uppercase tracking-widest mono-text">${m.partOfSpeech}</span>
+                            <p class="mt-2 text-white text-lg leading-relaxed">${m.definitions[0].definition}</p>
+                        </div>
+                    `).join('');
+                    
+                    content.innerHTML = `<h3 class="text-4xl header-title font-black text-white capitalize mb-1">${word}</h3><p class="text-gray-500 mono-text mb-8">${phonetic}</p>${meaningsHtml}`;
+                } catch(err) { content.innerHTML = `<p class="text-[var(--hp-red)] mt-10 font-bold">Connection Error.</p>`; }
+            }
+        });
+
+        function buildLessonNavigator() {
+            const list = document.getElementById('nav-steps-list'); if (!list) return;
+            list.innerHTML = '';
+            lessonData.forEach((step, i) => {
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left p-3 rounded flex items-center gap-3 transition-all header-title ${i === state.current ? 'bg-[var(--accent-green)]/10 text-[var(--accent-green)] font-bold border-l-4 border-[var(--accent-green)] shadow-sm' : 'text-[#888] hover:bg-white/5'}`;
+                btn.innerHTML = `<span class="text-[10px] w-4 opacity-50">${i+1}</span><div class="flex flex-col truncate"><span class="text-sm truncate">${step.title}</span></div>`;
+                btn.onclick = () => { state.current = i; renderStep(); toggleLessonNavigator(); };
+                list.appendChild(btn);
+            });
+        }
+
+        function triggerPraise(main, sub) {
+            document.getElementById('teacher-hud')?.classList.remove('active'); 
+            const overlay = document.getElementById('praise-overlay'); const card = document.getElementById('praise-card');
+            
+            if(main === 'PERFECT!') {
+                card.className = "hub-card p-16 rounded-[2rem] text-center transform scale-50 transition-transform duration-500 border-2 border-[var(--accent-cyan)] shadow-[0_0_50px_rgba(0,240,255,0.3)]";
+                document.getElementById('praise-main').className = "header-title text-5xl md:text-7xl font-black tracking-tighter uppercase mb-4 text-[var(--accent-cyan)] drop-shadow-lg";
+            } else {
+                card.className = "hub-card p-16 rounded-[2rem] text-center transform scale-50 transition-transform duration-500 border-2 border-[var(--accent-green)] shadow-[0_0_50px_rgba(29,185,84,0.3)]";
+                document.getElementById('praise-main').className = "header-title text-5xl md:text-7xl font-black tracking-tighter uppercase mb-4 text-[var(--accent-green)] drop-shadow-lg";
+            }
+            document.getElementById('praise-main').innerText = main; document.getElementById('praise-sub').innerText = sub;
+            overlay.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => card.classList.replace('scale-50', 'scale-100'), 50); shootConfetti();
+            setTimeout(() => { card.classList.replace('scale-100', 'scale-50'); overlay.classList.add('opacity-0', 'pointer-events-none'); }, 2500);
+        }
+
+        function shootConfetti() {
+            const cCanvas = document.getElementById('confetti-canvas'); const cCtx = cCanvas.getContext('2d');
+            cCanvas.width = window.innerWidth; cCanvas.height = window.innerHeight;
+            const pieces = []; const colors = ['#00f0ff', '#00ffa3', '#ffffff'];
+            for(let i=0; i<60; i++) pieces.push({ x: cCanvas.width/2, y: cCanvas.height/2+100, vx: (Math.random()-0.5)*20, vy: (Math.random()-1)*20-5, size: Math.random()*8+4, color: colors[Math.floor(Math.random()*colors.length)], rot: Math.random()*360, rotSpeed: (Math.random()-0.5)*10 });
+            let animationId;
+            function animateC() {
+                cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height); let active = false;
+                pieces.forEach(p => {
+                    p.x += p.vx; p.y += p.vy; p.vy += 0.5; p.rot += p.rotSpeed; if(p.y < cCanvas.height) active = true;
+                    cCtx.save(); cCtx.translate(p.x, p.y); cCtx.rotate(p.rot*Math.PI/180); cCtx.fillStyle = p.color; 
+                    cCtx.beginPath(); cCtx.arc(0, 0, p.size, 0, Math.PI * 2); cCtx.fill(); cCtx.restore();
+                });
+                if(active) animationId = requestAnimationFrame(animateC); else cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height);
+            }
+            animateC();
+        }
+        
+        window.onload = () => { 
+            updateHUD(); 
+            buildLessonNavigator(); 
+            goHome(); 
+        };
+    </script>
+</body>
+</html>
